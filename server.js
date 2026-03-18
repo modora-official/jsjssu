@@ -5,15 +5,13 @@ const io = require('socket.io')(http);
 const { WebcastPushConnection } = require('tiktok-live-connector');
 
 // ==========================================
-// 1. DATA PWA (Biar jadi Aplikasi)
+// 1. DATA PWA
 // ==========================================
 const manifestJson = {
     "name": "Live Flag Race", "short_name": "FlagRace", "start_url": "/", "display": "fullscreen",
-    "orientation": "landscape", "background_color": "#09090b", "theme_color": "#3b82f6",
-    "icons": [{"src": "/icon.svg", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any maskable"}]
+    "orientation": "landscape", "background_color": "#09090b", "theme_color": "#3b82f6"
 };
 app.get('/manifest.json', (req, res) => res.json(manifestJson));
-app.get('/icon.svg', (req, res) => { res.setHeader('Content-Type', 'image/svg+xml'); res.send(`<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><rect width="100" height="100" fill="#3b82f6"/><text x="50%" y="50%" font-size="40" text-anchor="middle" dy=".3em" fill="#fff">🏁</text></svg>`); });
 
 // ==========================================
 // 2. TAMPILAN UI/UX PRO (Frontend)
@@ -26,44 +24,60 @@ const htmlPage = `
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Live Bar Race Pro</title>
     <link rel="manifest" href="/manifest.json">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
         :root { --bg: #09090b; --panel: #18181b; --text: #f8fafc; --accent: #3b82f6; }
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
-        body { background-color: var(--bg); color: var(--text); overflow: hidden; height: 100vh; width: 100vw; }
+        body { background-color: var(--bg); color: var(--text); overflow: hidden; height: 100vh; width: 100vw; display: flex; }
         
-        /* OVERLAY SETUP (Biar Fullscreen & Input Username) */
+        /* OVERLAY SETUP */
         #setup-screen { position: absolute; inset: 0; background: rgba(0,0,0,0.9); z-index: 999; display: flex; flex-direction: column; align-items: center; justify-content: center; backdrop-filter: blur(10px); }
         .setup-box { background: var(--panel); padding: 30px; border-radius: 15px; text-align: center; border: 1px solid #333; box-shadow: 0 0 20px rgba(59,130,246,0.3); }
         .setup-box h2 { margin-bottom: 20px; color: #fff; }
-        input { padding: 12px 20px; font-size: 16px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; width: 100%; margin-bottom: 15px; outline: none; text-align: center; }
-        button { background: linear-gradient(90deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; transition: 0.2s; text-transform: uppercase; letter-spacing: 1px; }
-        button:hover { transform: scale(1.05); box-shadow: 0 0 15px #3b82f6; }
+        input { padding: 12px 20px; font-size: 16px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; width: 100%; margin-bottom: 15px; text-align: center; }
+        button { background: linear-gradient(90deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; text-transform: uppercase; }
         
-        /* AREA GAME UTAMA */
-        #game-screen { display: none; flex-direction: column; height: 100%; padding: 15px; padding-right: 280px; position: relative; }
-        header { text-align: center; margin-bottom: 15px; }
-        h1 { font-size: 26px; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent); }
-        .status { font-size: 14px; font-weight: bold; color: #ef4444; margin-top: 5px; text-shadow: 0 0 5px red; }
-        .status.online { color: #22c55e; text-shadow: 0 0 5px #22c55e; }
-
-        /* LEADERBOARD & BENDERA */
-        .leaderboard { display: flex; flex-direction: column; gap: 10px; flex: 1; justify-content: center; }
-        .row { display: flex; align-items: center; background: rgba(24, 24, 27, 0.8); padding: 8px 15px; border-radius: 12px; border: 1px solid #333; }
-        .flag { font-size: 35px; min-width: 50px; text-align: center; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); transition: transform 0.2s; }
-        .flag.bounce { transform: scale(1.3) translateY(-5px); }
+        /* AREA GAME UTAMA (Lanskap Terbagi 2) */
+        #game-screen { display: none; width: 100%; height: 100%; padding: 15px; gap: 20px; }
         
-        .track-container { flex: 1; margin: 0 15px; background: #000; border-radius: 20px; height: 26px; overflow: hidden; border: 1px solid #222; }
-        .bar { height: 100%; width: 3%; border-radius: 20px; transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1); position: relative; }
+        /* KIRI: AREA BENDERA (Tengah Sempurna) */
+        .left-panel { flex: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(24, 24, 27, 0.4); border-radius: 15px; padding: 20px; border: 1px solid #222; }
+        .left-panel header { text-align: center; margin-bottom: 30px; width: 100%; }
+        h1 { font-size: 28px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; gap: 15px; }
+        h1 i { color: #eab308; text-shadow: 0 0 10px #eab308; }
+        
+        .leaderboard { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 800px; }
+        .row { display: flex; align-items: center; background: rgba(0, 0, 0, 0.6); padding: 10px 15px; border-radius: 12px; border: 1px solid #333; }
+        .flag { font-size: 38px; min-width: 60px; text-align: center; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.6)); }
+        .track-container { flex: 1; margin: 0 15px; background: #000; border-radius: 20px; height: 28px; overflow: hidden; border: 1px solid #222; }
+        .bar { height: 100%; width: 3%; border-radius: 20px; transition: width 0.3s ease; position: relative; }
         .bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.4), transparent); animation: shimmer 1.5s infinite linear; }
-        .score { font-size: 20px; font-weight: 900; min-width: 45px; text-align: right; color: #fff; text-shadow: 1px 1px 3px #000; }
+        .score { font-size: 22px; font-weight: 900; min-width: 50px; text-align: right; color: #fff; }
+
+        /* KANAN: TOP PENONTON & NOTIFIKASI */
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; max-width: 350px; }
         
-        /* NOTIFIKASI REALTIME */
-        .notif-container { position: absolute; top: 15px; right: 15px; width: 250px; display: flex; flex-direction: column; gap: 8px; z-index: 50; }
-        .notif { background: rgba(24, 24, 27, 0.9); border-left: 4px solid #3b82f6; padding: 10px 15px; border-radius: 8px; color: white; font-size: 13px; font-weight: bold; box-shadow: 0 4px 6px rgba(0,0,0,0.5); border-top: 1px solid #333; border-right: 1px solid #333; border-bottom: 1px solid #333; animation: slideIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards; }
+        /* Papan Peringkat Penonton */
+        .viewer-board { background: rgba(24, 24, 27, 0.8); border: 1px solid #333; border-radius: 12px; padding: 15px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .viewer-title { font-size: 16px; font-weight: bold; color: #fff; text-align: center; margin-bottom: 15px; padding-bottom: 10px; border-bottom: 1px solid #444; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .viewer-title i { color: #3b82f6; }
+        .viewer-list { display: flex; flex-direction: column; gap: 10px; overflow-y: hidden; }
+        .viewer-item { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 8px 12px; border-radius: 8px; font-size: 14px; border-left: 3px solid #3b82f6; }
+        .v-name { font-weight: bold; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+        .v-pts { color: #eab308; font-weight: bold; }
+
+        /* Area Notifikasi */
+        .notif-container { height: 200px; display: flex; flex-direction: column; gap: 8px; overflow: hidden; position: relative; }
+        .notif { background: rgba(0, 0, 0, 0.8); padding: 10px 12px; border-radius: 8px; color: white; font-size: 13px; font-weight: bold; border: 1px solid #333; animation: slideIn 0.3s ease forwards; display: flex; align-items: center; gap: 10px; }
+        .notif i { font-size: 16px; }
+        .n-gift i { color: #eab308; }
+        .n-like i { color: #ef4444; }
+        .n-share i { color: #10b981; }
+        .n-follow i { color: #3b82f6; }
         
         @keyframes shimmer { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }
-        @keyframes slideIn { from { transform: translateX(120%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
-        @keyframes slideOut { to { transform: translateX(120%); opacity: 0; } }
+        @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOut { to { opacity: 0; transform: scale(0.9); } }
     </style>
 </head>
 <body>
@@ -71,79 +85,76 @@ const htmlPage = `
     <div id="setup-screen">
         <div class="setup-box">
             <h2>PENGATURAN LIVE</h2>
-            <input type="text" id="usernameInput" placeholder="Masukkan Username TikTok..." value="gamemodapkofficial">
-            <button onclick="startGame()">Mulai & Layar Penuh</button>
+            <input type="text" id="usernameInput" placeholder="Username TikTok..." value="gamemodapkofficial">
+            <button onclick="startGame()">Mulai Layar Penuh</button>
         </div>
     </div>
 
     <div id="game-screen">
-        <header>
-            <h1>🏆 FLAG WAR RACE 🏆</h1>
-            <div class="status" id="conn-status">🔴 Menunggu Koneksi...</div>
-        </header>
+        <div class="left-panel">
+            <header>
+                <h1><i class="fa-solid fa-trophy"></i> FLAG WAR RACE <i class="fa-solid fa-trophy"></i></h1>
+            </header>
+            <div class="leaderboard" id="board"></div>
+        </div>
 
-        <div class="leaderboard" id="board"></div>
-        <div class="notif-container" id="notif-area"></div>
+        <div class="right-panel">
+            <div class="viewer-board">
+                <div class="viewer-title"><i class="fa-solid fa-users"></i> TOP PENONTON</div>
+                <div class="viewer-list" id="viewer-board">
+                    </div>
+            </div>
+            <div class="notif-container" id="notif-area">
+                </div>
+        </div>
     </div>
 
     <script src="/socket.io/socket.io.js"></script>
     <script>
         const socket = io();
         const board = document.getElementById('board');
-        const statusEl = document.getElementById('conn-status');
+        const viewerBoard = document.getElementById('viewer-board');
         const notifArea = document.getElementById('notif-area');
 
-        // FUNGSI LAYAR PENUH & LANDSCAPE
         function startGame() {
             let user = document.getElementById('usernameInput').value.trim();
             if(!user) return alert("Username nggak boleh kosong!");
             
             let elem = document.documentElement;
             if (elem.requestFullscreen) { elem.requestFullscreen().catch(e => console.log(e)); }
-            
-            // Kunci ke Landscape
-            if(screen.orientation && screen.orientation.lock) {
-                screen.orientation.lock('landscape').catch(e => console.log(e));
-            }
+            if(screen.orientation && screen.orientation.lock) { screen.orientation.lock('landscape').catch(e => console.log(e)); }
 
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
             
-            statusEl.innerHTML = '🔄 Menghubungkan ke @' + user + '...';
             socket.emit('connectToTiktok', user);
         }
 
-        // FUNGSI NOTIFIKASI
+        // Handle Notifikasi
         socket.on('notify', (data) => {
             const el = document.createElement('div');
-            el.className = 'notif';
-            el.innerHTML = data.msg;
-            if(data.color) el.style.borderLeftColor = data.color;
-            notifArea.appendChild(el);
+            let iconHTML = '';
             
-            // Hapus notif setelah 4 detik
+            if(data.type === 'gift') iconHTML = '<div class="n-gift"><i class="fa-solid fa-gift"></i></div>';
+            else if(data.type === 'like') iconHTML = '<div class="n-like"><i class="fa-solid fa-heart"></i></div>';
+            else if(data.type === 'share') iconHTML = '<div class="n-share"><i class="fa-solid fa-share"></i></div>';
+            else if(data.type === 'follow') iconHTML = '<div class="n-follow"><i class="fa-solid fa-user-plus"></i></div>';
+
+            el.className = 'notif';
+            el.innerHTML = iconHTML + '<div>' + data.msg + '</div>';
+            
+            notifArea.prepend(el); // Taruh di paling atas list notif
+            if(notifArea.children.length > 5) notifArea.lastChild.remove(); // Maksimal 5 notif tampil
+            
             setTimeout(() => {
-                el.style.animation = 'slideOut 0.3s forwards';
+                el.style.animation = 'fadeOut 0.3s forwards';
                 setTimeout(() => el.remove(), 300);
-            }, 4000);
+            }, 5000);
         });
 
-        // STATUS KONEKSI
-        socket.on('status', (data) => {
-            if(data.type === 'online') {
-                statusEl.className = 'status online';
-                statusEl.innerHTML = '🟢 LIVE TERHUBUNG!';
-            } else {
-                statusEl.className = 'status';
-                statusEl.innerHTML = '🔴 ' + data.msg;
-            }
-        });
-
-        // UPDATE BENDERA
-        let prevScores = {};
+        // Handle Update Bendera
         socket.on('updateData', (topFlags) => {
             board.innerHTML = ''; 
-            
             topFlags.forEach((item, index) => {
                 let percentage = Math.max(3, Math.min(100, item.score)); 
                 let barColor = index === 0 ? 'linear-gradient(90deg, #eab308, #fef08a)' : 
@@ -151,20 +162,30 @@ const htmlPage = `
                                index === 2 ? 'linear-gradient(90deg, #b45309, #fcd34d)' : 
                                'linear-gradient(90deg, #3b82f6, #60a5fa)';
 
-                // Efek mantul kalau skor nambah
-                let isBounce = prevScores[item.flag] && prevScores[item.flag] < item.score ? 'bounce' : '';
-                prevScores[item.flag] = item.score;
-
                 const row = document.createElement('div');
                 row.className = 'row';
                 row.innerHTML = \`
-                    <div class="flag \${isBounce}">\${item.flag}</div>
+                    <div class="flag">\${item.flag}</div>
                     <div class="track-container">
                         <div class="bar" style="width: \${percentage}%; background: \${barColor}"></div>
                     </div>
                     <div class="score">\${item.score}</div>
                 \`;
                 board.appendChild(row);
+            });
+        });
+
+        // Handle Update Top Penonton
+        socket.on('updateViewers', (topViewers) => {
+            viewerBoard.innerHTML = '';
+            topViewers.forEach((v, index) => {
+                let medal = index === 0 ? '<i class="fa-solid fa-medal" style="color:#eab308"></i> ' : 
+                            index === 1 ? '<i class="fa-solid fa-medal" style="color:#94a3b8"></i> ' : 
+                            index === 2 ? '<i class="fa-solid fa-medal" style="color:#b45309"></i> ' : '';
+                const row = document.createElement('div');
+                row.className = 'viewer-item';
+                row.innerHTML = \`<div class="v-name">\${medal}\${v.name}</div><div class="v-pts">\${v.pts} <i class="fa-solid fa-star" style="font-size:10px;"></i></div>\`;
+                viewerBoard.appendChild(row);
             });
         });
     </script>
@@ -179,36 +200,35 @@ app.get('/', (req, res) => { res.send(htmlPage); });
 // ==========================================
 let activeConnection = null;
 let flagScores = {};
+let viewerPoints = {}; // Simpan poin penonton
 const MAX_SCORE = 100;
 const flagRegex = /(?:\uD83C[\uDDE6-\uDDFF]){2}/g;
 
 function getTop6() {
-    return Object.keys(flagScores)
-        .map(flag => ({ flag, score: flagScores[flag] }))
-        .sort((a, b) => b.score - a.score)
-        .slice(0, 6);
+    return Object.keys(flagScores).map(flag => ({ flag, score: flagScores[flag] })).sort((a, b) => b.score - a.score).slice(0, 6);
+}
+
+// Fungsi Hitung Poin Penonton (Maksimal 6 orang top)
+function addViewerPoints(username, points) {
+    viewerPoints[username] = (viewerPoints[username] || 0) + points;
+    let topViewers = Object.keys(viewerPoints)
+        .map(name => ({ name, pts: viewerPoints[name] }))
+        .sort((a, b) => b.pts - a.pts).slice(0, 6);
+    io.emit('updateViewers', topViewers);
 }
 
 io.on('connection', (socket) => {
-    
-    // KONEKSI DIMULAI SAAT TOMBOL DI WEB DITEKAN
     socket.on('connectToTiktok', (username) => {
         if(activeConnection) { activeConnection.disconnect(); }
-        
-        console.log(\`\n🔄 Nyoba konek ke: \${username}\`);
+        console.log(`\n🔄 Konek ke: ${username}`);
         activeConnection = new WebcastPushConnection(username, { enableExtendedGiftInfo: true });
 
         activeConnection.connect().then(state => {
-            console.info(\`✅ BERHASIL KONEK KE LIVE: \${state.roomInfo.owner.display_id}\`);
-            socket.emit('status', { type: 'online' });
-            socket.emit('notify', { msg: '🎉 Berhasil terhubung ke Live!', color: '#22c55e' });
+            console.info(`✅ KONEK: ${state.roomInfo.owner.display_id}`);
         }).catch(err => {
-            console.error('❌ Gagal konek:', err.message);
-            socket.emit('status', { type: 'error', msg: 'Gagal Konek. Pastikan udah mulai Live!' });
-            socket.emit('notify', { msg: '❌ Gagal. Cek setting umur Live lu!', color: '#ef4444' });
+            console.error('❌ Gagal:', err.message);
         });
 
-        // TANGKAP KOMENTAR BENDERA
         activeConnection.on('chat', data => {
             let detectedFlags = data.comment.match(flagRegex);
             if (detectedFlags) {
@@ -222,34 +242,32 @@ io.on('connection', (socket) => {
                 });
                 if(isUpdated) io.emit('updateData', getTop6());
             }
+            // Komen biasa dapet 1 poin
+            addViewerPoints(data.uniqueId, 1);
         });
 
-        // TANGKAP EVENT UNTUK NOTIFIKASI
         activeConnection.on('gift', data => {
-            socket.emit('notify', { msg: \`🎁 <b>\${data.uniqueId}</b> ngirim <b>\${data.giftName}</b>!\`, color: '#eab308' });
+            socket.emit('notify', { type: 'gift', msg: `<b>${data.uniqueId}</b> ngirim <b>${data.giftName}</b>!` });
+            addViewerPoints(data.uniqueId, data.diamondCount * 10); // Gift dapet poin gede
         });
         
         activeConnection.on('like', data => {
-            socket.emit('notify', { msg: \`❤️ <b>\${data.uniqueId}</b> tap-tap layar!\`, color: '#ef4444' });
+            socket.emit('notify', { type: 'like', msg: `<b>${data.uniqueId}</b> tap-tap layar!` });
+            addViewerPoints(data.uniqueId, data.likeCount); 
+        });
+
+        activeConnection.on('share', data => {
+            socket.emit('notify', { type: 'share', msg: `<b>${data.uniqueId}</b> membagikan live!` });
+            addViewerPoints(data.uniqueId, 15); // Share dapet 15 poin
         });
 
         activeConnection.on('follow', data => {
-            socket.emit('notify', { msg: \`👤 <b>\${data.uniqueId}</b> mulai mengikuti!\`, color: '#3b82f6' });
-        });
-
-        activeConnection.on('member', data => {
-            socket.emit('notify', { msg: \`👋 <b>\${data.uniqueId}</b> bergabung!\`, color: '#14b8a6' });
-        });
-
-        activeConnection.on('streamEnd', () => {
-            socket.emit('status', { type: 'error', msg: 'Live Berakhir' });
+            socket.emit('notify', { type: 'follow', msg: `<b>${data.uniqueId}</b> mulai mengikuti!` });
+            addViewerPoints(data.uniqueId, 20); // Follow dapet 20 poin
         });
     });
 });
 
 http.listen(3000, () => {
-    console.log('\n=======================================');
-    console.log('🚀 SERVER JALAN BOSKU!');
-    console.log('👉 Buka Chrome/Safari, ketik: http://localhost:3000');
-    console.log('=======================================\n');
+    console.log('\n🚀 SERVER PRO JALAN! Buka http://localhost:3000\n');
 });
