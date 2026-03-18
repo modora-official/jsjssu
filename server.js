@@ -1,10 +1,10 @@
-pkg update -y && pkg install nodejs -y && mkdir -p tiktok-live && cd tiktok-live && npm init -y && npm install express socket.io tiktok-live-connector && cat << 'EOF' > server.js
 const express = require('express');
 const app = express();
 const http = require('http').Server(app);
 const io = require('socket.io')(http);
 const { WebcastPushConnection } = require('tiktok-live-connector');
 
+// TAMPILAN WEB GAMENYA
 const htmlPage = `
 <!DOCTYPE html>
 <html lang="id">
@@ -38,6 +38,7 @@ const htmlPage = `
             else if (data.type === 'malay') { scoreMalay += data.amount; if(scoreMalay > 100) scoreMalay = 100; document.getElementById('bar-malay').style.width = scoreMalay + '%'; document.getElementById('bar-malay').innerText = '🇲🇾 MALAY (' + scoreMalay + '%)'; }
             else if (data.type === 'gift') { scoreGift += data.amount; if(scoreGift > 100) scoreGift = 100; document.getElementById('bar-gift').style.width = scoreGift + '%'; document.getElementById('bar-gift').innerText = '🎁 SULTAN GIFT (' + scoreGift + '%)'; }
 
+            // Reset kalau ada yang mentok 100%
             if (scoreIndo === 100 || scoreMalay === 100 || scoreGift === 100) {
                 setTimeout(() => {
                     scoreIndo = scoreMalay = scoreGift = 0;
@@ -54,28 +55,32 @@ const htmlPage = `
 
 app.get('/', (req, res) => { res.send(htmlPage); });
 
+// USERNAME TIKTOK LU UDAH GUA PASANG DI SINI
 let tiktokUsername = "gamemodapkofficial";
 let tiktokLiveConnection = new WebcastPushConnection(tiktokUsername);
 
 tiktokLiveConnection.connect().then(state => {
-    console.info(`\n✅ Konek ke Live: ${state.roomInfo.owner.display_id}`);
+    console.info(`\n✅ BERHASIL KONEK KE LIVE: ${state.roomInfo.owner.display_id}`);
 }).catch(err => {
-    console.error('\n❌ Gagal konek. Pastiin lu udah mulai Live TikToknya!\n', err);
+    console.error('\n❌ GAGAL KONEK! Pastiin lu udah mulai Live di aplikasi TikTok!\n', err);
 });
 
+// LOGIKA KOMENTAR
 tiktokLiveConnection.on('chat', data => {
     let komen = data.comment.toLowerCase();
     if (komen.includes('🇮🇩') || komen.includes('indo')) { io.emit('updateBar', { type: 'indo', amount: 1 }); }
     if (komen.includes('🇲🇾') || komen.includes('malay')) { io.emit('updateBar', { type: 'malay', amount: 1 }); }
 });
 
+// LOGIKA GIFT
 tiktokLiveConnection.on('gift', data => {
     if (data.giftType === 1 && !data.repeatEnd) return; 
     io.emit('updateBar', { type: 'gift', amount: data.diamondCount * 2 }); 
 });
 
 http.listen(3000, () => {
-    console.log('\n🚀 SERVER JALAN BOSKU! Buka http://localhost:3000 di browser HP lu!\n');
+    console.log('\n=======================================');
+    console.log('🚀 SERVER JALAN BOSKU!');
+    console.log('👉 Buka Chrome/Safari, ketik: http://localhost:3000');
+    console.log('=======================================\n');
 });
-EOF
-node server.js
