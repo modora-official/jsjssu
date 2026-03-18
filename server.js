@@ -9,7 +9,7 @@ const { WebcastPushConnection } = require('tiktok-live-connector');
 // ==========================================
 const manifestJson = {
     "name": "Live Flag Race", "short_name": "FlagRace", "start_url": "/", "display": "fullscreen",
-    "orientation": "portrait", "background_color": "#09090b", "theme_color": "#3b82f6"
+    "orientation": "landscape", "background_color": "#09090b", "theme_color": "#3b82f6"
 };
 app.get('/manifest.json', (req, res) => res.json(manifestJson));
 
@@ -40,14 +40,14 @@ const htmlPage = `
         input { padding: 12px 20px; font-size: 16px; border-radius: 8px; border: 1px solid #444; background: #222; color: #fff; width: 100%; margin-bottom: 15px; text-align: center; }
         button { background: linear-gradient(90deg, #3b82f6, #2563eb); color: white; border: none; padding: 12px 20px; font-size: 16px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; text-transform: uppercase; }
         
-        /* AREA GAME UTAMA (Rasio 3:4 Portrait) */
+        /* AREA GAME UTAMA (Rasio 4:3 Landscape) */
         #game-screen { 
-            display: none; width: 100%; max-height: 100vh; aspect-ratio: 3 / 4; 
-            padding: 15px; gap: 15px; flex-direction: column; background: #09090b;
-            border-radius: 10px; border: 1px solid #222; margin: auto;
+            display: none; width: 100%; max-height: 100vh; aspect-ratio: 4 / 3; 
+            padding: 15px; gap: 15px; flex-direction: row; /* Berjejer kiri-kanan */
+            background: #09090b; border-radius: 10px; border: 1px solid #222; margin: auto;
         }
         
-        /* ATAS: AREA BENDERA */
+        /* KIRI: AREA BENDERA */
         .left-panel { flex: 2; display: flex; flex-direction: column; justify-content: center; align-items: center; background: rgba(24, 24, 27, 0.4); border-radius: 15px; padding: 15px; border: 1px solid #222; }
         .left-panel header { text-align: center; margin-bottom: 20px; width: 100%; }
         h1 { font-size: 24px; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; text-shadow: 0 0 15px var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; gap: 10px; }
@@ -59,12 +59,12 @@ const htmlPage = `
         
         /* TRACK & BAR WARNA HITAM */
         .track-container { flex: 1; margin: 0 12px; background: #e2e8f0; border-radius: 20px; height: 24px; overflow: hidden; border: 1px solid #94a3b8; }
-        .bar { height: 100%; width: 3%; border-radius: 20px; transition: width 0.3s ease; position: relative; background: #000; }
+        .bar { height: 100%; width: 3%; border-radius: 20px; transition: width 0.3s ease; position: relative; background: #000000; }
         .bar::after { content: ''; position: absolute; inset: 0; background: linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent); animation: shimmer 1.5s infinite linear; }
         .score { font-size: 18px; font-weight: 900; min-width: 40px; text-align: right; color: #fff; }
 
-        /* BAWAH: TOP PENONTON & NOTIFIKASI */
-        .right-panel { flex: 1; display: flex; flex-direction: row; gap: 15px; height: 35%; }
+        /* KANAN: TOP PENONTON & NOTIFIKASI */
+        .right-panel { flex: 1; display: flex; flex-direction: column; gap: 15px; height: 100%; }
         
         /* Papan Peringkat Penonton */
         .viewer-board { background: rgba(24, 24, 27, 0.8); border: 1px solid #333; border-radius: 12px; padding: 10px; flex: 1; display: flex; flex-direction: column; overflow: hidden; }
@@ -74,13 +74,13 @@ const htmlPage = `
         .viewer-item { display: flex; justify-content: space-between; align-items: center; background: #000; padding: 8px 10px; border-radius: 8px; font-size: 13px; border-left: 3px solid #3b82f6; }
         
         /* Ellipsis untuk Username Panjang */
-        .v-name { font-weight: bold; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 90px; flex: 1; }
-        .v-pts { color: #eab308; font-weight: bold; margin-left: 5px; }
+        .v-name { font-weight: bold; color: #cbd5e1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100px; flex: 1; }
+        .v-pts { color: #eab308; font-weight: bold; margin-left: 5px; white-space: nowrap; }
 
         /* Area Notifikasi */
         .notif-container { flex: 1; display: flex; flex-direction: column; gap: 6px; overflow: hidden; position: relative; background: rgba(24, 24, 27, 0.8); border: 1px solid #333; border-radius: 12px; padding: 10px; }
         .notif { background: rgba(0, 0, 0, 0.8); padding: 8px 10px; border-radius: 8px; color: white; font-size: 12px; font-weight: bold; border: 1px solid #444; animation: slideIn 0.3s ease forwards; display: flex; align-items: center; gap: 8px; }
-        .notif i { font-size: 14px; }
+        .notif i { font-size: 14px; min-width: 16px; text-align: center; }
         .n-gift i { color: #eab308; }
         .n-like i { color: #ef4444; }
         .n-share i { color: #10b981; }
@@ -131,8 +131,9 @@ const htmlPage = `
             
             let elem = document.documentElement;
             if (elem.requestFullscreen) { elem.requestFullscreen().catch(e => console.log(e)); }
-            // Mengunci orientasi ke portrait sesuai rasio 3:4
-            if(screen.orientation && screen.orientation.lock) { screen.orientation.lock('portrait').catch(e => console.log(e)); }
+            
+            // Mengunci orientasi ke landscape
+            if(screen.orientation && screen.orientation.lock) { screen.orientation.lock('landscape').catch(e => console.log(e)); }
 
             document.getElementById('setup-screen').style.display = 'none';
             document.getElementById('game-screen').style.display = 'flex';
@@ -167,15 +168,13 @@ const htmlPage = `
             board.innerHTML = ''; 
             topFlags.forEach((item, index) => {
                 let percentage = Math.max(3, Math.min(100, item.score)); 
-                // Warna bar hitam wajib sesuai instruksi
-                let barColor = '#000000';
 
                 const row = document.createElement('div');
                 row.className = 'row';
                 row.innerHTML = \`
                     <div class="flag">\${item.flag}</div>
                     <div class="track-container">
-                        <div class="bar" style="width: \${percentage}%; background: \${barColor}"></div>
+                        <div class="bar" style="width: \${percentage}%;"></div>
                     </div>
                     <div class="score">\${item.score}</div>
                 \`;
@@ -219,9 +218,15 @@ function getTop6() {
 // Fungsi Hitung Poin Penonton (Maksimal 3 orang top)
 function addViewerPoints(username, points) {
     viewerPoints[username] = (viewerPoints[username] || 0) + points;
-    let topViewers = Object.keys(viewerPoints)
-        .map(name => ({ name, pts: viewerPoints[name] }))
-        .sort((a, b) => b.pts - a.pts).slice(0, 3); // Diubah dari 6 ke 3
+    
+    let sortable = [];
+    for (let user in viewerPoints) {
+        sortable.push({ name: user, pts: viewerPoints[user] });
+    }
+    
+    sortable.sort((a, b) => b.pts - a.pts);
+    let topViewers = sortable.slice(0, 3); // Top 3 User
+    
     io.emit('updateViewers', topViewers);
 }
 
